@@ -1,0 +1,806 @@
+{
+  "name": "Referral Action (Admin Web App)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "referral-action",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "name": "Webhook Referral Action",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "id": "webhook-referral-action",
+      "webhookId": "referral-action"
+    },
+    {
+      "parameters": {
+        "jsCode": "let b = $json.body;\nif (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }\nb = b || {};\nconst row = Number(b.row_number);\nconst n = Number(b.n || 0);\nlet error = '';\nif (!['klaim','tandai_kirim','klaim_free','ping'].includes(b.action)) error = 'action tidak dikenal';\nelse if (b.action !== 'ping' && !(row >= 2)) error = 'row_number tidak valid';\nelse if (b.action === 'klaim_free' && ![1,2,3].includes(n)) error = 'n harus 1-3';\nreturn [{ json: { action: error ? 'error' : b.action, error, kode: String(b.kode || ''), row_number: row, n, catatan: String(b.catatan || '') } }];"
+      },
+      "name": "Parse Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "id": "parse-request"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "klaim",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "klaim"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "tandai_kirim",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "tandai_kirim"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "klaim_free",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "klaim_free"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "ping",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "ping"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "error"
+        }
+      },
+      "name": "Switch Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        300
+      ],
+      "id": "switch-action"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_ID_SPREADSHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_NAMA_SHEET",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "name": "Ambil Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        80
+      ],
+      "id": "ambil-rows",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GANTI_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const req = $('Parse Request').first().json;\nconst row = $input.all().find(i => Number(i.json.row_number) === req.row_number);\nif (!row) return [{ json: { __notfound: true } }];\nif (req.kode && String(row.json['Kode Referral']).trim() !== req.kode.trim()) return [{ json: { __notfound: true, __mismatch: true } }];\nconst qty = (Number(row.json['Qty Klaim Kode']) || 0) + 1;\nreturn [{ json: { row_number: req.row_number, 'Qty Klaim Kode': qty } }];"
+      },
+      "name": "Hitung Qty +1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        80
+      ],
+      "id": "hitung-qty-+1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.__notfound }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Row Ditemukan?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        80
+      ],
+      "id": "row-ditemukan?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_ID_SPREADSHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_NAMA_SHEET",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Qty Klaim Kode",
+              "displayName": "Qty Klaim Kode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Update Qty Klaim",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "update-qty-klaim",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GANTI_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, action: $('Parse Request').first().json.action, row_number: $('Parse Request').first().json.row_number, message: 'Klaim dicatat' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Respon Klaim OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        0
+      ],
+      "id": "respon-klaim-ok"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 404,
+        "responseBody": "={{ JSON.stringify({ ok: false, message: 'Row/kode tidak cocok' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Respon Tidak Ditemukan",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        180
+      ],
+      "id": "respon-tidak-ditemukan"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { row_number: $json.row_number, 'Status Kirim': true } }];"
+      },
+      "name": "Set Status Kirim",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        260
+      ],
+      "id": "set-status-kirim"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_ID_SPREADSHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_NAMA_SHEET",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Status Kirim",
+              "displayName": "Status Kirim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Update Status Kirim",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        260
+      ],
+      "id": "update-status-kirim",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GANTI_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, action: $('Parse Request').first().json.action, row_number: $('Parse Request').first().json.row_number, message: 'Status kirim diperbarui' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Respon Kirim OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        260
+      ],
+      "id": "respon-kirim-ok"
+    },
+    {
+      "parameters": {
+        "jsCode": "const req = $json;\nreturn [{ json: { row_number: req.row_number, ['Klaim Free ' + req.n]: true } }];"
+      },
+      "name": "Set Klaim Free",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        420
+      ],
+      "id": "set-klaim-free"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_ID_SPREADSHEET",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "GANTI_DENGAN_NAMA_SHEET",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Klaim Free 1",
+              "displayName": "Klaim Free 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Klaim Free 2",
+              "displayName": "Klaim Free 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Klaim Free 3",
+              "displayName": "Klaim Free 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Update Klaim Free",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        420
+      ],
+      "id": "update-klaim-free",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GANTI_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, action: $('Parse Request').first().json.action, row_number: $('Parse Request').first().json.row_number, message: 'Klaim free dicatat' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Respon Free OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        420
+      ],
+      "id": "respon-free-ok"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, message: 'pong' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Respon Ping",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        560
+      ],
+      "id": "respon-ping"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 400,
+        "responseBody": "={{ JSON.stringify({ ok: false, message: $json.error }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Respon Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        700
+      ],
+      "id": "respon-error"
+    },
+    {
+      "parameters": {
+        "width": 620,
+        "height": 200,
+        "content": "## Referral Action\nGANTI di 4 node Google Sheets: credential, ID spreadsheet (GANTI_DENGAN_ID_SPREADSHEET) & nama sheet (GANTI_DENGAN_NAMA_SHEET) — sama dengan sheet db-referral.\nKolom kunci: row_number. Body POST: {action:'klaim'|'tandai_kirim'|'klaim_free', kode, row_number, catatan, n}.\nKolom catatan belum ditulis ke sheet (tambahkan kolom 'Catatan' bila perlu).\nAktifkan workflow (Active) agar URL /webhook/referral-action hidup."
+      },
+      "name": "CATATAN",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -200
+      ],
+      "id": "catatan"
+    }
+  ],
+  "connections": {
+    "Webhook Referral Action": {
+      "main": [
+        [
+          {
+            "node": "Parse Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Request": {
+      "main": [
+        [
+          {
+            "node": "Switch Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Action": {
+      "main": [
+        [
+          {
+            "node": "Ambil Rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Status Kirim",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Klaim Free",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respon Ping",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respon Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Rows": {
+      "main": [
+        [
+          {
+            "node": "Hitung Qty +1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hitung Qty +1": {
+      "main": [
+        [
+          {
+            "node": "Row Ditemukan?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row Ditemukan?": {
+      "main": [
+        [
+          {
+            "node": "Update Qty Klaim",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respon Tidak Ditemukan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Qty Klaim": {
+      "main": [
+        [
+          {
+            "node": "Respon Klaim OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status Kirim": {
+      "main": [
+        [
+          {
+            "node": "Update Status Kirim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Kirim": {
+      "main": [
+        [
+          {
+            "node": "Respon Kirim OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Klaim Free": {
+      "main": [
+        [
+          {
+            "node": "Update Klaim Free",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Klaim Free": {
+      "main": [
+        [
+          {
+            "node": "Respon Free OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
