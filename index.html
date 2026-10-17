@@ -22,7 +22,7 @@ label{display:block;margin:8px 0 3px;font-size:13px;font-weight:600}.row{display
 #cHari,#cSumber{max-height:240px}#tTop td{white-space:normal}#tTop td.r{text-align:right;white-space:nowrap}
 </style></head><body>
 <div id="gate"><div class="card"><h3>🔒 Admin Referral</h3><input id="pin" type="password" inputmode="numeric" placeholder="PIN" style="width:100%"><br><br><button class="btn p" onclick="cekPin()">Masuk</button></div></div>
-<header><h1>🍕 Referral Pizza Nyantuy</h1><nav><button data-p="dash" class="on">Dashboard</button> <button data-p="data">Data</button> <button data-p="klaim">Klaim Kode</button> <button data-p="set">Pengaturan</button></nav>
+<header><h1>🍕 Referral Pizza Nyantuy</h1><nav><button data-p="dash" class="on">Dashboard</button> <button data-p="data">Data</button> <button data-p="klaim">Klaim Kode</button> </nav>
 <div class="row"><button class="btn s" onclick="muat()">🔄 Refresh</button><label style="margin:0;color:#fff;font-weight:400"><input type="checkbox" id="auto"> Auto 60 dtk</label></div></header>
 <main><div id="bFetch" class="banner"></div><div id="bAct" class="banner"></div>
 <section id="p-dash">
@@ -35,7 +35,7 @@ label{display:block;margin:8px 0 3px;font-size:13px;font-weight:600}.row{display
 <section id="p-data" class="hide"><div class="filters"><input id="q" placeholder="Cari nama / kode / WA"><select id="fKirim"><option value="">Status kirim: semua</option><option value="1">Sudah dikirim</option><option value="0">Belum dikirim</option></select><select id="fSumber"><option value="">Sumber: semua</option></select><select id="fElig"><option value="">Eligible: semua</option><option value="1">Ada free jatuh tempo</option></select><label style="margin:0"><input type="checkbox" id="fDup"> Hanya WA duplikat</label><button class="btn p" onclick="exportCSV()">⬇️ Export CSV</button></div>
 <div class="tw card" style="padding:0"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div></section>
 <section id="p-klaim" class="hide"><div class="card"><label>Kode referral / nama / WA</label><div class="row"><input id="kq" placeholder="mis. Jack06" style="flex:1" list="kodeList"><datalist id="kodeList"></datalist><button class="btn p" onclick="cariKode()">Cari</button></div><div id="kHasil"></div></div></section>
-<section id="p-set" class="hide"><div class="card" style="max-width:520px">
+<section id="p-set" style="display:none" aria-hidden="true" class="hide"><div class="card" style="max-width:520px">
 <label>URL data (GET)</label><input id="sData" style="width:100%"><label>URL aksi (POST, workflow n8n-referral-action)</label><input id="sAct" style="width:100%"><label>URL Log Klaim (GET)</label><input id="sLog" style="width:100%">
 <label>Tiap berapa klaim = 1 free</label><input id="sPer" type="number" min="1"><label>Maksimal free</label><input id="sMax" type="number" min="1" max="5"><label>PIN</label><input id="sPin">
 <br><br><button class="btn p" onclick="simpanSet()">Simpan</button> <button class="btn" onclick="tesAksi()">Tes koneksi aksi</button><p><small>Disimpan di browser ini (localStorage).</small></p></div></section></main>
