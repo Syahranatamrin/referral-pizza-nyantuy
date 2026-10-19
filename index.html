@@ -97,9 +97,9 @@ function sInfo(o){const e=sExp(o);if(!e)return{e:null,st:'none'};const sisa=Math
 const sFmt=d=>d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
 function sChip(i){if(i.st==='none')return'';if(i.st==='done')return'<span class="cd cd-s">✔ Selesai</span>';if(i.st==='exp')return`<span class="cd cd-x">Expired ${sFmt(i.e)}</span>`;if(i.st==='last')return`<span class="cd cd-r">⏰ Hari terakhir · ${sFmt(i.e)}</span>`;return`<span class="cd ${i.st==='soon'?'cd-o':'cd-g'}">Berlaku s/d ${sFmt(i.e)} · sisa ${i.sisa} hari</span>`}
 function normStamp(raw){const rows=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.data)?raw.data:(raw&&typeof raw==='object'?[raw]:[]));return rows.filter(r=>r&&typeof r==='object').map(r=>{const m={};Object.keys(r).forEach(k=>m[sKey(k)]=r[k]);const g=k=>m[k]??'';const st=[1,2,3,4].map(i=>sFill(g('stamp '+i)));return{row:r.row_number,nama:String(g('nama lengkap')).trim(),wa:hp(g('no whatsapp')),nom:sNom(g('nominal belanja')),st,n:st.filter(Boolean).length,free:sFill(g('klaim free')),ts:sDate(g('timestamp')),bw:sDate(g('batas waktu')),hasO:'outlet' in m,outlet:outN(g('outlet'))}}).filter(o=>o.nama||o.wa)}
-async function muatStamp(){const b=$('bStamp');b.className='banner warn';b.textContent='⏳ Memuat data stamp card…';const get=async u=>{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const t=await r.text();return t.trim()?JSON.parse(t):[]};
+async function muatStamp(){const b=$('bStamp');b.className='banner warn';b.textContent='⏳ Memuat data stamp card…';const get=async u=>{const r=await fetch(u+(u.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const t=await r.text();return t.trim()?JSON.parse(t):[]};
 const [a,c]=await Promise.allSettled([get(DEF.urlStamp),get(DEF.urlDbPembelian)]);const err=[];
-if(a.status==='fulfilled'){SD=normStamp(a.value);sLoaded=true}else err.push('data kartu / db-stampcard ('+a.reason.message+')');
+if(a.status==='fulfilled'){SD=sApplyPend(normStamp(a.value));sLoaded=true}else err.push('data kartu / db-stampcard ('+a.reason.message+')');
 if(c.status==='fulfilled'){PD=normPemb(c.value);PDok=true}else{PDok=false;err.push('Total Pembelian / db-pembelian ('+c.reason.message+')')}
 if(err.length){b.className='banner err';b.textContent='⚠️ Gagal ambil '+err.join(' & ')+'. Bagian lain tetap ditampilkan. Cek workflow n8n aktif & koneksi internet.'}else b.className='banner';
 $('sUpd').textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})+' · '+SD.length+' kartu'+(PDok?' · '+PD.length+' transaksi':'');renderStamp()}
@@ -138,29 +138,41 @@ const p2=n=>String(n).padStart(2,'0'),bTgl=d=>p2(d.getDate())+'/'+p2(d.getMonth(
 function bMark(e,bad){e.style.borderColor=bad?'#c62828':'';e.style.background=bad?'#fdecea':''}
 function bMsg(c,t){const b=$('bBeli');b.className=c?'banner '+c:'banner';b.textContent=t||''}
 function bNama(v,ro){const n=$('bNama');n.value=v;n.readOnly=ro;n.style.background=ro?'#f3efe9':''}
-async function bCek(){const raw=$('bWa').value,dig=raw.replace(/\D/g,''),wa=hp(raw),info=$('bInfo');bCur=null;$('bKirim').disabled=false;
+let bSeq=0,bPend=[];
+function sApplyPend(data){const now=Date.now();bPend=bPend.filter(p=>p.until>now);bPend=bPend.filter(p=>{if(p.tipe==='stamp'){const o=data.find(x=>x.row===p.row);if(!o)return true;if(o.st[p.ke-1])return false;o.st[p.ke-1]=true;o.n=o.st.filter(Boolean).length;o.nom=Math.max(o.nom||0,p.total);return true}
+const has=data.some(x=>x.wa===p.wa&&x.ts&&Math.abs(x.ts-p.obj.ts)<5*60e3);if(has)return false;data.push(Object.assign({},p.obj,{st:p.obj.st.slice()}));return true});return data}
+const bust=u=>u+(u.includes('?')?'&':'?')+'t='+Date.now();
+async function sFresh(){const r=await fetch(bust(DEF.urlStamp),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const t=await r.text();SD=sApplyPend(normStamp(t.trim()?JSON.parse(t):[]));sLoaded=true;return SD}
+function bDecide(wa,data){const today=sDay(new Date());const C=data.filter(o=>o.wa===wa&&!o.free).map(o=>({o,e:sExp(o)})).filter(x=>!x.e||x.e>=today).sort((a,b)=>(b.o.ts||0)-(a.o.ts||0));
+const act=C.find(x=>x.o.n<4),full=C.find(x=>x.o.n>=4);if(act)return{tipe:'stamp',o:act.o,e:act.e,ke:act.o.st.indexOf(false)+1};if(full)return{tipe:'full',o:full.o,e:full.e};return{tipe:'baru',last:data.filter(o=>o.wa===wa).sort((a,b)=>(b.ts||0)-(a.ts||0))[0]}}
+const bKey=d=>d?d.tipe+'|'+(d.o?d.o.row+'|'+d.o.n:'')+'|'+(d.ke||''):'';
+function bShow(d){const info=$('bInfo'),today=sDay(new Date());bCur=d;$('bKirim').disabled=false;const sisa=e=>e?' · sisa '+Math.round((e-today)/864e5)+' hari':'';const box=(bg,c,h)=>`<div style="margin:8px 0;padding:10px 12px;border-radius:10px;background:${bg};color:${c};font-size:14px">${h}</div>`;
+if(d.tipe==='stamp'){bNama(d.o.nama,true);info.innerHTML=box('#e3f4e4','#1b5e20',`✅ <b>Pelanggan lama</b> · ${esc(d.o.nama)} · Stamp ${d.o.n}/4${sisa(d.e)}<br><small>Pembelian ini = <b>Stamp ${d.ke}</b></small>`)}
+else if(d.tipe==='full'){bNama(d.o.nama,true);$('bKirim').disabled=true;info.innerHTML=box('#fff0c2','#7a5600',`🎁 <b>Kartu penuh</b> · ${esc(d.o.nama)} · Stamp 4/4${sisa(d.e)}<br>Arahkan ke <b>Tukar Reward</b> dulu.`)}
+else{if($('bNama').readOnly)bNama('',false);if(d.last&&!$('bNama').value)bNama(d.last.nama,false);info.innerHTML=box('#faf4ec','#7a3e12',`🆕 <b>Pelanggan baru</b> · kartu baru (Stamp 1)${d.last?'<br><small>Kartu sebelumnya sudah selesai/expired.</small>':''}`)}}
+async function bCek(){const my=++bSeq,raw=$('bWa').value,dig=raw.replace(/\D/g,''),wa=hp(raw),info=$('bInfo');bCur=null;$('bKirim').disabled=false;
 if(dig.length<8){info.innerHTML='';if($('bNama').readOnly)bNama('',false);return null}
-if(!sLoaded){info.innerHTML='<small>⏳ Mengecek data pelanggan…</small>';await sEnsure();if(hp($('bWa').value)!==wa)return null}
-if(!sLoaded){info.innerHTML='<div class="banner err" style="display:block;margin:8px 0">⚠️ Data stamp card gagal dimuat, tidak bisa cek pelanggan. Coba Refresh.</div>';return null}
-const today=sDay(new Date());const C=SD.filter(o=>o.wa===wa&&!o.free).map(o=>({o,e:sExp(o)})).filter(x=>!x.e||x.e>=today).sort((a,b)=>(b.o.ts||0)-(a.o.ts||0));
-const act=C.find(x=>x.o.n<4),full=C.find(x=>x.o.n>=4);const sisa=e=>e?' · sisa '+Math.round((e-today)/864e5)+' hari':'';const box=(bg,c,h)=>`<div style="margin:8px 0;padding:10px 12px;border-radius:10px;background:${bg};color:${c};font-size:14px">${h}</div>`;
-if(act){const o=act.o;bCur={tipe:'stamp',o,e:act.e};bNama(o.nama,true);info.innerHTML=box('#e3f4e4','#1b5e20',`✅ <b>Pelanggan lama</b> · ${esc(o.nama)} · Stamp ${o.n}/4${sisa(act.e)}<br><small>Pembelian ini = <b>Stamp ${o.st.indexOf(false)+1}</b></small>`)}
-else if(full){const o=full.o;bCur={tipe:'full',o};bNama(o.nama,true);$('bKirim').disabled=true;info.innerHTML=box('#fff0c2','#7a5600',`🎁 <b>Kartu penuh</b> · ${esc(o.nama)} · Stamp 4/4${sisa(full.e)}<br>Arahkan ke <b>Tukar Reward</b> dulu.`)}
-else{const last=SD.filter(o=>o.wa===wa).sort((a,b)=>(b.ts||0)-(a.ts||0))[0];bCur={tipe:'baru'};if($('bNama').readOnly)bNama('',false);if(last&&!$('bNama').value)bNama(last.nama,false);info.innerHTML=box('#faf4ec','#7a3e12',`🆕 <b>Pelanggan baru</b> · kartu baru (Stamp 1)${last?'<br><small>Kartu sebelumnya sudah selesai/expired.</small>':''}`)}
-return bCur}
+info.innerHTML='<small>⏳ Mengecek…</small>';let warn='';
+try{await sFresh()}catch(e){if(!sLoaded){if(my===bSeq)info.innerHTML='<div class="banner err" style="display:block;margin:8px 0">⚠️ Data stamp card gagal dimuat ('+esc(e.message)+'), tidak bisa cek pelanggan. Coba lagi.</div>';return null}warn='<small style="color:#a14d00">⚠️ Gagal cek data terbaru, memakai data terakhir.</small>'}
+if(my!==bSeq||hp($('bWa').value)!==wa)return null;
+const d=bDecide(wa,SD);bShow(d);if(warn)info.insertAdjacentHTML('beforeend',warn);return d}
 async function bSubmit(){bMsg();const wE=$('bWa'),nE=$('bNama'),mE=$('bNom'),oE=$('bOut');if(!bCur&&wE.value.replace(/\D/g,'').length>=8)await bCek();
 if(bCur&&bCur.tipe==='full')return bMsg('err','🎁 Kartu pelanggan ini sudah penuh (4/4). Arahkan ke Tukar Reward dulu.');
 const nom=+mE.value.replace(/\D/g,'')||0;const bad=[[wE,wE.value.replace(/\D/g,'').length<8],[nE,!nE.value.trim()],[mE,!nom],[oE,!oE.value]];bad.forEach(([e,b])=>bMark(e,b));const f=bad.find(x=>x[1]);if(f){f[0].focus();return bMsg('err','⚠️ No WhatsApp, Nama Lengkap, Nominal Belanja dan Outlet wajib diisi.')}
-if(!bCur)return bMsg('err','⚠️ Data pelanggan belum bisa dicek. Coba Refresh.');if(bCur.tipe==='full')return bMsg('err','🎁 Kartu pelanggan ini sudah penuh (4/4). Arahkan ke Tukar Reward dulu.');
-const now=new Date(),c=bCur,isB=c.tipe==='baru';const ke=isB?1:c.o.st.indexOf(false)+1;const exp=isB?(()=>{const d=sDay(now);d.setDate(d.getDate()+30);return d})():c.e;
-const body={action:'pembelian',tipe:isB?'baru':'stamp',row_number:isB?'':c.o.row,nama:nE.value.trim(),wa:hp(wE.value),nominal:nom,nominal_total:isB?nom:(c.o.nom||0)+nom,outlet:oE.value,stamp_ke:ke,kolom_stamp:'Stamp '+ke,tanggal:bJam(now),batas_waktu:exp?bTgl(exp):''};
-const btn=$('bKirim'),lbl=btn.textContent;btn.disabled=true;btn.textContent='⏳ Mengirim…';
+if(!bCur)return bMsg('err','⚠️ Data pelanggan belum bisa dicek. Coba lagi.');
+const btn=$('bKirim'),lbl=btn.textContent;btn.disabled=true;btn.textContent='⏳ Mengecek data…';const wa=hp(wE.value);
+try{await sFresh()}catch(e){btn.textContent=lbl;btn.disabled=false;return bMsg('err','⚠️ Gagal cek data terbaru ('+e.message+'). Coba lagi.')}
+const d=bDecide(wa,SD);if(bKey(d)!==bKey(bCur)){++bSeq;btn.textContent=lbl;bShow(d);return bMsg('err','⚠️ Data berubah, cek lagi lalu tekan Catat Pembelian.')}
+const now=new Date(),isB=d.tipe==='baru',ke=isB?1:d.ke;const exp=isB?(()=>{const x=sDay(now);x.setDate(x.getDate()+30);return x})():d.e;
+const body={action:'pembelian',tipe:isB?'baru':'stamp',row_number:isB?'':d.o.row,nama:nE.value.trim(),wa,nominal:nom,nominal_total:isB?nom:(d.o.nom||0)+nom,outlet:oE.value,stamp_ke:ke,kolom_stamp:'Stamp '+ke,tanggal:bJam(now),batas_waktu:exp?bTgl(exp):''};
+btn.textContent='⏳ Mengirim…';
 try{const r=await fetch(DEF.urlPembelian,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});if(!r.ok)throw new Error('HTTP '+r.status+(r.status===404?' (workflow pembelian belum aktif)':''));
-popOk(isB?`Kartu baru dibuat untuk ${body.nama} (Stamp 1)`:`Stamp ke-${ke} tercatat untuk ${body.nama}`);bReset();sLoaded=false;await sEnsure()}
-catch(e){bMsg('err','⚠️ Gagal mencatat pembelian: '+e.message+'. Cek koneksi & workflow n8n "pembelian" aktif.')}finally{btn.textContent=lbl;btn.disabled=false}}
+if(isB){const obj={row:null,nama:body.nama,wa,nom,st:[true,false,false,false],n:1,free:false,ts:sDate(body.tanggal),bw:exp,hasO:true,outlet:outN(body.outlet),opt:true};SD.push(obj);bPend.push({tipe:'baru',wa,obj:Object.assign({},obj,{st:obj.st.slice()}),until:Date.now()+60e3})}else{d.o.st[ke-1]=true;d.o.n=d.o.st.filter(Boolean).length;d.o.nom=body.nominal_total;bPend.push({tipe:'stamp',row:d.o.row,ke,total:body.nominal_total,until:Date.now()+60e3})}
+popOk(isB?`Kartu baru dibuat untuk ${body.nama} (Stamp 1)`:`Stamp ke-${ke} tercatat untuk ${body.nama}`);bReset();renderStamp();clearTimeout(window.bReT);window.bReT=setTimeout(()=>muatStamp(),2500)}
+catch(e){bMsg('err','⚠️ Gagal mencatat pembelian: '+e.message+'. Cek koneksi & workflow n8n "pembelian" aktif.')}finally{btn.textContent=lbl;btn.disabled=bCur&&bCur.tipe==='full'}}
 function bReset(){['bWa','bNom'].forEach(i=>$(i).value='');bNama('',false);$('bOut').value='';$('bInfo').innerHTML='';bCur=null;['bWa','bNama','bNom','bOut'].forEach(i=>bMark($(i),false))}
 $('bOut').innerHTML='<option value="">— pilih outlet —</option>'+OUTLETS.map(x=>`<option>${x}</option>`).join('');
-$('bWa').addEventListener('input',()=>{bMark($('bWa'),false);bCur=null;clearTimeout(bT);bT=setTimeout(bCek,350)});
+$('bWa').addEventListener('input',()=>{bMark($('bWa'),false);bCur=null;clearTimeout(bT);bT=setTimeout(bCek,400)});
 $('bNama').addEventListener('input',()=>bMark($('bNama'),false));['input','change'].forEach(ev=>$('s-beli').addEventListener(ev,()=>{if($('bBeli').classList.contains('err'))bMsg()}));$('bOut').addEventListener('change',()=>bMark($('bOut'),false));
 $('bNom').addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').replace(/^0+/,'');e.target.value=d?(+d).toLocaleString('id-ID'):'';bMark(e.target,false)});
 $('sq').oninput=()=>SD.length&&SD[0].cd?renderStampList():renderStamp();
