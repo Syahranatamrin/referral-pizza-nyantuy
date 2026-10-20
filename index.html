@@ -5,7 +5,7 @@
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#f5f1ea;color:#2b2118}
 header{background:#7a3e12;color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 header h1{font-size:18px;margin:0}nav button,.btn{border:0;border-radius:8px;padding:8px 12px;cursor:pointer;background:#fff;color:#7a3e12;font-weight:600}
-.btn.p{background:#c8691c;color:#fff}.btn.g{background:#2e7d32;color:#fff}.btn.s{padding:4px 8px;font-size:12px}
+.btn.p{background:#c8691c;color:#fff}.btn:disabled{background:#d9d2ca!important;color:#8a8079!important;cursor:not-allowed}.btn.g{background:#2e7d32;color:#fff}.btn.s{padding:4px 8px;font-size:12px}
 nav button.on{background:#f2b46b}main{padding:14px;max-width:1200px;margin:auto}
 .banner{padding:10px 14px;border-radius:8px;margin-bottom:10px;display:none}.banner.err{background:#fde2e1;color:#8a1c1c;display:block}.banner.ok{background:#e3f4e4;color:#1b5e20;display:block}.banner.warn{background:#fff4d6;color:#7a5600;display:block}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.card{background:#fff;border-radius:12px;padding:12px;box-shadow:0 1px 3px #0001}
@@ -73,7 +73,7 @@ body.home{background:#f8f9fb}.lw{max-width:860px;margin:28px auto;padding:0 16px
 <hr style="border:0;border-top:1px dashed #e8d5bd;margin:14px 0 4px">
 <label for="bWa">No WhatsApp <span style="color:#c62828">*</span></label><input id="bWa" type="tel" inputmode="tel" autocomplete="off" placeholder="62812xxxxxxxx" style="width:100%;min-height:48px;font-size:16px"><div id="bInfo"></div>
 <label for="bNama">Nama Lengkap <span style="color:#c62828">*</span></label><input id="bNama" autocomplete="off" placeholder="nama pelanggan" style="width:100%;min-height:48px;font-size:16px">
-<div id="bRest"><label for="bNom">Nominal Belanja <span style="color:#c62828">*</span></label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:600;color:#6b5a4a">Rp</span><input id="bNom" type="text" inputmode="numeric" autocomplete="off" placeholder="0" style="width:100%;min-height:48px;font-size:16px;padding-left:38px"></div>
+<div id="bRest"><label for="bNom">Nominal Belanja <span style="color:#c62828">*</span></label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:600;color:#6b5a4a">Rp</span><input id="bNom" type="text" inputmode="numeric" autocomplete="off" placeholder="0" style="width:100%;min-height:48px;font-size:16px;padding-left:38px"></div><small id="bNomHint" style="display:block;margin-top:4px;font-size:13px;color:#6b5a4a"></small>
 <label for="bOut">Outlet <span style="color:#c62828">*</span></label><select id="bOut" style="width:100%;min-height:48px;font-size:16px"></select>
 <button class="btn p" id="bKirim" onclick="bSubmit()" style="width:100%;min-height:54px;font-size:17px;margin-top:16px">🧾 Catat Pembelian</button></div></div></div>
 <div id="s-tukar" class="hide"><div class="card" style="max-width:520px;margin:0 auto;padding:16px"><h3 style="margin:0 0 6px">🎁 Tukar Reward</h3><div id="rBanner" class="banner"></div>
@@ -84,7 +84,7 @@ body.home{background:#f8f9fb}.lw{max-width:860px;margin:28px auto;padding:0 16px
 <button class="btn p" id="rKirim" onclick="rSubmit()" style="width:100%;min-height:54px;font-size:17px;margin-top:16px">🎁 Tukar Reward</button></div></div></div>
 <div id="s-data" class="hide"><div class="filters"><input id="sq" placeholder="Cari nama / no WA" style="flex:1;min-width:200px"></div><div class="sl" id="sList"></div></div><small id="sUpd"></small></div></main>
 <script>
-const DEF={data:'https://n8n.srv1123014.hstgr.cloud/webhook/db-referral',act:'https://n8n.srv1123014.hstgr.cloud/webhook/action',act2:'https://n8n.srv1123014.hstgr.cloud/webhook/action2',log:'https://n8n.srv1123014.hstgr.cloud/webhook/db-log-klaim',stampForm1:'https://n8n.srv1123014.hstgr.cloud/form/stamp-card-pembelian',stampForm2:'https://n8n.srv1123014.hstgr.cloud/form/stamp-card-tukar-reward',urlStamp:'https://n8n.srv1123014.hstgr.cloud/webhook/db-stampcard',urlPembelian:'https://n8n.srv1123014.hstgr.cloud/webhook/pembelian',urlDbPembelian:'https://n8n.srv1123014.hstgr.cloud/webhook/db-pembelian',urlReward:'https://n8n.srv1123014.hstgr.cloud/webhook/reward',per:5,max:5,pin:'1234'};
+const DEF={data:'https://n8n.srv1123014.hstgr.cloud/webhook/db-referral',act:'https://n8n.srv1123014.hstgr.cloud/webhook/action',act2:'https://n8n.srv1123014.hstgr.cloud/webhook/action2',log:'https://n8n.srv1123014.hstgr.cloud/webhook/db-log-klaim',stampForm1:'https://n8n.srv1123014.hstgr.cloud/form/stamp-card-pembelian',stampForm2:'https://n8n.srv1123014.hstgr.cloud/form/stamp-card-tukar-reward',urlStamp:'https://n8n.srv1123014.hstgr.cloud/webhook/db-stampcard',urlPembelian:'https://n8n.srv1123014.hstgr.cloud/webhook/pembelian',urlDbPembelian:'https://n8n.srv1123014.hstgr.cloud/webhook/db-pembelian',urlReward:'https://n8n.srv1123014.hstgr.cloud/webhook/reward',per:5,max:5,pin:'1234',minBelanja:50000};
 const OUTLETS=['Sungai Poso','Gowa','Sudiang','Barombong','Limbung','Pare-Pare','Tamalate'];function outN(v){const t=String(v||'').trim();if(!t)return'(tanpa outlet)';const k=t.toLowerCase().replace(/[^a-z]/g,'');return OUTLETS.find(x=>x.toLowerCase().replace(/[^a-z]/g,'')===k)||t}
 let S=Object.assign({},DEF,JSON.parse(localStorage.getItem('refSet')||'{}'));if(+S.max===3)S.max=5;if(!S.act||S.act.includes('referral-action'))S.act=DEF.act;if(!S.log)S.log=DEF.log;if(!S.act2)S.act2=DEF.act2;let L=[],ch3,ch4,ch5;let D=[],sortK='tgl',sortA=false,ch1,ch2,timer;
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -161,14 +161,17 @@ function bDecide(wa,data){const today=sDay(new Date());const C=data.filter(o=>o.
 const act=C.find(x=>x.o.n<4),full=C.find(x=>x.o.n>=4);if(act)return{tipe:'stamp',o:act.o,e:act.e,ke:act.o.st.indexOf(false)+1};if(full)return{tipe:'full',o:full.o,e:full.e};return{tipe:'baru',last:data.filter(o=>o.wa===wa).sort((a,b)=>(b.ts||0)-(a.ts||0))[0]}}
 const bKey=d=>d?d.tipe+'|'+(d.o?d.o.row+'|'+d.o.n:'')+'|'+(d.ke||''):'';
 
+function bMin(){return +DEF.minBelanja||0}
+const bRp=n=>'Rp'+Math.round(n||0).toLocaleString('id-ID');
+function bNomCek(){const nom=+$('bNom').value.replace(/\D/g,'')||0,min=bMin(),h=$('bNomHint'),t='Minimal belanja '+bRp(min)+' untuk dapat stamp';if(h){if(nom>=min&&nom>0){h.textContent='✅ '+t;h.style.color='#2e7d32'}else if(nom>0){h.textContent='⚠️ '+t;h.style.color='#c62828'}else{h.textContent=t;h.style.color='#6b5a4a'}}$('bKirim').disabled=!!(bCur&&bCur.tipe==='full')||nom<min||!nom}
 function bRestHide(on){$('bRest').classList.toggle('hide',!!on)}
 function bTukar(){const wa=bCur&&bCur.o?bCur.o.wa:hp($('bWa').value);rBuka(wa)}
 function bShow(d){const info=$('bInfo'),today=sDay(new Date());bRestHide(d.tipe==='full');bCur=d;$('bKirim').disabled=false;const sisa=e=>e?' · sisa '+Math.round((e-today)/864e5)+' hari':'';const box=(bg,c,h)=>`<div style="margin:8px 0;padding:10px 12px;border-radius:10px;background:${bg};color:${c};font-size:14px">${h}</div>`;
 if(d.tipe==='stamp'){bNama(d.o.nama,true);info.innerHTML=box('#e3f4e4','#1b5e20',`✅ <b>Pelanggan lama</b> · ${esc(d.o.nama)} · Stamp ${d.o.n}/4${sisa(d.e)}<br><small>Pembelian ini = <b>Stamp ${d.ke}</b></small>`)}
 else if(d.tipe==='full'){bNama(d.o.nama,true);$('bKirim').disabled=true;info.innerHTML=box('#fff0c2','#7a5600',`🎁 <b>Kartu penuh</b> · ${esc(d.o.nama)} · Stamp 4/4${sisa(d.e)}<br>Arahkan ke <b>Tukar Reward</b> dulu.<button type="button" class="btn p" onclick="bTukar()" style="display:block;width:100%;min-height:52px;font-size:17px;margin-top:10px">🎁 Tukar Reward sekarang</button>`);
 }
-else{if($('bNama').readOnly)bNama('',false);if(d.last&&!$('bNama').value)bNama(d.last.nama,false);info.innerHTML=box('#faf4ec','#7a3e12',`🆕 <b>Pelanggan baru</b> · kartu baru (Stamp 1)${d.last?'<br><small>Kartu sebelumnya sudah selesai/expired.</small>':''}`)}}
-async function bCek(){const my=++bSeq,raw=$('bWa').value,dig=raw.replace(/\D/g,''),wa=hp(raw),info=$('bInfo');bCur=null;$('bKirim').disabled=false;
+else{if($('bNama').readOnly)bNama('',false);if(d.last&&!$('bNama').value)bNama(d.last.nama,false);info.innerHTML=box('#faf4ec','#7a3e12',`🆕 <b>Pelanggan baru</b> · kartu baru (Stamp 1)${d.last?'<br><small>Kartu sebelumnya sudah selesai/expired.</small>':''}`)}bNomCek()}
+async function bCek(){const my=++bSeq,raw=$('bWa').value,dig=raw.replace(/\D/g,''),wa=hp(raw),info=$('bInfo');bCur=null;bNomCek();
 if(dig.length<8){info.innerHTML='';if($('bNama').readOnly)bNama('',false);return null}
 info.innerHTML='<small>⏳ Mengecek…</small>';let warn='';
 try{await sFresh()}catch(e){if(!sLoaded){if(my===bSeq)info.innerHTML='<div class="banner err" style="display:block;margin:8px 0">⚠️ Data stamp card gagal dimuat ('+esc(e.message)+'), tidak bisa cek pelanggan. Coba lagi.</div>';return null}warn='<small style="color:#a14d00">⚠️ Gagal cek data terbaru, memakai data terakhir.</small>'}
@@ -176,7 +179,7 @@ if(my!==bSeq||hp($('bWa').value)!==wa)return null;
 const d=bDecide(wa,SD);bShow(d);if(warn)info.insertAdjacentHTML('beforeend',warn);return d}
 async function bSubmit(){bMsg();const wE=$('bWa'),nE=$('bNama'),mE=$('bNom'),oE=$('bOut');if(!bCur&&wE.value.replace(/\D/g,'').length>=8)await bCek();
 if(bCur&&bCur.tipe==='full')return bMsg('err','🎁 Kartu pelanggan ini sudah penuh (4/4). Arahkan ke Tukar Reward dulu.');
-const nom=+mE.value.replace(/\D/g,'')||0;const bad=[[wE,wE.value.replace(/\D/g,'').length<8],[nE,!nE.value.trim()],[mE,!nom],[oE,!oE.value]];bad.forEach(([e,b])=>bMark(e,b));const f=bad.find(x=>x[1]);if(f){f[0].focus();return bMsg('err','⚠️ No WhatsApp, Nama Lengkap, Nominal Belanja dan Outlet wajib diisi.')}
+const nom=+mE.value.replace(/\D/g,'')||0;if(nom>0&&nom<bMin()){bMark(mE,true);mE.focus();bNomCek();return bMsg('err','⚠️ Minimal belanja '+bRp(bMin())+'. Nominal ini belum bisa dapat stamp.')}const bad=[[wE,wE.value.replace(/\D/g,'').length<8],[nE,!nE.value.trim()],[mE,!nom],[oE,!oE.value]];bad.forEach(([e,b])=>bMark(e,b));const f=bad.find(x=>x[1]);if(f){f[0].focus();return bMsg('err','⚠️ No WhatsApp, Nama Lengkap, Nominal Belanja dan Outlet wajib diisi.')}
 if(!bCur)return bMsg('err','⚠️ Data pelanggan belum bisa dicek. Coba lagi.');
 const btn=$('bKirim'),lbl=btn.textContent;btn.disabled=true;btn.textContent='⏳ Mengecek data…';const wa=hp(wE.value);
 try{await sFresh()}catch(e){btn.textContent=lbl;btn.disabled=false;return bMsg('err','⚠️ Gagal cek data terbaru ('+e.message+'). Coba lagi.')}
@@ -187,8 +190,8 @@ btn.textContent='⏳ Mengirim…';
 try{const r=await fetch(DEF.urlPembelian,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});if(!r.ok)throw new Error('HTTP '+r.status+(r.status===404?' (workflow pembelian belum aktif)':''));
 if(isB){const obj={row:null,nama:body.nama,wa,nom,st:[true,false,false,false],n:1,free:false,ts:sDate(body.tanggal),bw:exp,hasO:true,outlet:outN(body.outlet),opt:true};SD.push(obj);bPend.push({tipe:'baru',wa,obj:Object.assign({},obj,{st:obj.st.slice()}),until:Date.now()+60e3})}else{d.o.st[ke-1]=true;d.o.n=d.o.st.filter(Boolean).length;d.o.nom=body.nominal_total;bPend.push({tipe:'stamp',row:d.o.row,ke,total:body.nominal_total,until:Date.now()+60e3})}
 popOk(isB?`Kartu baru dibuat untuk ${body.nama} (Stamp 1)`:ke===4?`Stamp ke-4 tercatat untuk ${body.nama}. Kartu penuh! Lanjut ke Tukar Reward…`:`Stamp ke-${ke} tercatat untuk ${body.nama}`);if(!isB&&ke===4){clearTimeout(window.bTkT);window.bTkT=setTimeout(()=>{tutupPop();rBuka(wa)},1800)}bReset();renderStamp();clearTimeout(window.bReT);window.bReT=setTimeout(()=>muatStamp(),2500)}
-catch(e){bMsg('err','⚠️ Gagal mencatat pembelian: '+e.message+'. Cek koneksi & workflow n8n "pembelian" aktif.')}finally{btn.textContent=lbl;btn.disabled=bCur&&bCur.tipe==='full'}}
-function bReset(){bRestHide(false);['bWa','bNom'].forEach(i=>$(i).value='');bNama('',false);$('bOut').value='';$('bInfo').innerHTML='';bCur=null;['bWa','bNama','bNom','bOut'].forEach(i=>bMark($(i),false))}
+catch(e){bMsg('err','⚠️ Gagal mencatat pembelian: '+e.message+'. Cek koneksi & workflow n8n "pembelian" aktif.')}finally{btn.textContent=lbl;bNomCek()}}
+function bReset(){bRestHide(false);['bWa','bNom'].forEach(i=>$(i).value='');bNama('',false);$('bOut').value='';$('bInfo').innerHTML='';bCur=null;['bWa','bNama','bNom','bOut'].forEach(i=>bMark($(i),false));bNomCek()}
 $('bOut').innerHTML='<option value="">— pilih outlet —</option>'+OUTLETS.map(x=>`<option>${x}</option>`).join('');
 
 let bQT;const bSearch=()=>sSearch('bCari','bHasil',bPilih,'Tidak ditemukan — isi No WA untuk pelanggan baru');async function sSearch(ci,bi,pick,emp){const q=$(ci).value.trim(),box=$(bi);if(q.length<2){box.classList.add('hide');box.innerHTML='';return}
@@ -237,7 +240,7 @@ $('rCari').addEventListener('input',()=>{clearTimeout(rQT);rQT=setTimeout(()=>sS
 $('bCari').addEventListener('input',()=>{clearTimeout(bQT);bQT=setTimeout(bSearch,150)});
 $('bWa').addEventListener('input',()=>{bMark($('bWa'),false);bCur=null;bRestHide(false);clearTimeout(bT);bT=setTimeout(bCek,400)});
 $('bNama').addEventListener('input',()=>bMark($('bNama'),false));['input','change'].forEach(ev=>$('s-beli').addEventListener(ev,()=>{if($('bBeli').classList.contains('err'))bMsg()}));$('bOut').addEventListener('change',()=>bMark($('bOut'),false));
-$('bNom').addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').replace(/^0+/,'');e.target.value=d?(+d).toLocaleString('id-ID'):'';bMark(e.target,false)});
+$('bNom').addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').replace(/^0+/,'');e.target.value=d?(+d).toLocaleString('id-ID'):'';bMark(e.target,false);bNomCek()});$('bNom').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();bSubmit()}});bNomCek();
 $('sq').oninput=()=>SD.length&&SD[0].cd?renderStampList():renderStamp();
 document.querySelectorAll('#sPer button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#sPer button').forEach(x=>x.classList.toggle('on',x===b));sPerHari=+b.dataset.v;renderStampDash()});$('sOut').onchange=renderStampDash;
 document.querySelectorAll('#sTabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#sTabs button').forEach(x=>x.classList.toggle('on',x===b));['dash','data','beli','tukar'].forEach(k=>$('s-'+k).classList.toggle('hide',b.dataset.t!==k));if(b.dataset.t==='beli'){sEnsure();setTimeout(()=>$('bCari').focus(),50)}if(b.dataset.t==='tukar'){sEnsure();setTimeout(()=>{if(!$('rWa').value)$('rCari').focus()},50)}});
